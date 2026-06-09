@@ -1,0 +1,46 @@
+name: Build and Publish NextApproval Core
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: muratdelen/nextapproval-core
+  IMAGE_VERSION: 8.1.0
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build Flowable artifacts
+        run: ./mvnw -B -Pdistro -DskipTests -Dcheckstyle.skip=true install
+
+      - name: Build and publish NextApproval Core image
+        run: >
+          ./mvnw -B
+          -pl modules/flowable-app-rest
+          -PdockerPublish
+          -DskipTests
+          -Dcheckstyle.skip=true
+          -Djib.to.image=${REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}
+          -Djib.to.tags=latest
+          -Djib.to.auth.username=${{ github.actor }}
+          -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}
+          package
