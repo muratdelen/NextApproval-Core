@@ -12,6 +12,7 @@ env:
 
 jobs:
   windows:
+    if: github.repository == 'flowable/flowable-engine'
     name: 'Windows'
     runs-on: windows-latest
     steps:
