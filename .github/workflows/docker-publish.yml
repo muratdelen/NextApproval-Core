@@ -33,14 +33,22 @@ jobs:
         run: ./mvnw -B -Pdistro -DskipTests -Dcheckstyle.skip=true install
 
       - name: Build and publish NextApproval Core image
-        run: >
-          ./mvnw -B
-          -pl modules/flowable-app-rest
-          -PdockerPublish
-          -DskipTests
-          -Dcheckstyle.skip=true
-          -Djib.to.image=${REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION}
-          -Djib.to.tags=latest
-          -Djib.to.auth.username=${{ github.actor }}
-          -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }}
-          package
+        shell: bash
+        run: |
+          set +e
+          ./mvnw -B \
+            -pl modules/flowable-app-rest \
+            -PdockerPublish \
+            -DskipTests \
+            -Dcheckstyle.skip=true \
+            -Djib.to.image=${REGISTRY}/${IMAGE_NAME}:${IMAGE_VERSION} \
+            -Djib.to.tags=latest \
+            -Djib.to.auth.username=${{ github.actor }} \
+            -Djib.to.auth.password=${{ secrets.GITHUB_TOKEN }} \
+            package 2>&1 | tee jib-build.log
+          exit_code=${PIPESTATUS[0]}
+          if [ "${exit_code}" -ne 0 ]; then
+            errors=$(grep '^\[ERROR\]' jib-build.log | tail -n 12 | tr '\n' ' ')
+            echo "::error title=NextApproval image publish failed::${errors}"
+          fi
+          exit "${exit_code}"
