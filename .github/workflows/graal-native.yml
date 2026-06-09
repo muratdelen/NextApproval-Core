@@ -13,6 +13,7 @@ env:
 
 jobs:
   test_graal:
+    if: github.repository == 'flowable/flowable-engine'
     name: Linux Graal Native
     runs-on: ubuntu-latest
     steps:
